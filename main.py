@@ -139,8 +139,8 @@ def example_4():
 
             axs[i, j].plot([0, 1], [0, 0], color='black')
             axs[i, j].scatter([x], [y], color='black')
-            for k in range(len(points)-1):
-                axs[i, j].scatter([points[k][0], points[k+1][0]], [points[k][1], points[k+1][1]], color='red')
+            for point in points:
+                axs[i, j].scatter([point[0]], [point[1]], color='red')
             
             axs[i, j].scatter([best_x_worst_t], [0], color='blue')
             axs[i, j].set_aspect('equal', adjustable='box')
