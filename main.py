@@ -92,19 +92,19 @@ def best_recurse_cr(s: float, x: float, y: float, num_turns: int, opt: Callable[
 
         # if robot fails after helper reaches new_x, recurse
         new_s = min(1, s + d2new) # new starting point for robot (it has traveled while helper moved to new_x)
-        _points, _new_x_worst_t, _cr = best_recurse_cr(new_s, new_x, new_y, num_turns-1, opt=opt)
+        _points, _new_x_worst_t, worst_cr = best_recurse_cr(new_s, new_x, new_y, num_turns-1, opt=opt)
         points = [(new_x, new_y)] + _points
         new_x_worst_t = d2new + _new_x_worst_t
 
-        # get cr if robot fails before helper reaches new_x
+        # get worst-case cr if robot fails before helper reaches new_x
         for t in np.linspace(0, d2new, N_STEPS): # robot fails before helper reaches new_x
             cr = (s+line_del(s, x, y, m, t)) / opt(s+t)
-            if cr > _cr:
+            if cr > worst_cr:
                 new_x_worst_t = t
-                cr = _cr
+                worst_cr = cr
 
-        if cr < best_cr:
-            best_new_x_worst_t, best_new_x_points, best_cr = new_x_worst_t, points, cr
+        if worst_cr < best_cr:
+            best_new_x_worst_t, best_new_x_points, best_cr = new_x_worst_t, points, worst_cr
 
     return best_new_x_points, best_new_x_worst_t, best_cr
 
