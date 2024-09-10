@@ -108,83 +108,17 @@ def best_recurse_cr(s: float, x: float, y: float, num_turns: int, opt: Callable[
 
     return best_new_x_points, best_new_x_worst_t, best_cr
 
+def get_pursuit_points(x: float, y: float, num_turns: int) -> List[Tuple[float, float]]:
+    points = [(x, y)]
+    for i in range(num_turns):
+        # move toward ((i+1)/num_turns, 0) for a distance of 1/num_turns
+        x += ((i+1)/num_turns - x) / num_turns
+        y -= y / num_turns
+        points.append((x, y))
 
-def example_1(x: float, y: float):
-    best_m, best_m_worst_t, best_cr = best_line_cr(0, x, y, opt=lambda t: line_opt(0, x, y, t))
+    return points
 
-    plt.plot([0, 1], [0, 0], color='black')
-    plt.plot([x, best_m], [y, 0], color='red')
-    plt.scatter([0, best_m_worst_t], [0, 0], color='blue')
-    a = best_m_worst_t*(best_m-x)/np.sqrt((best_m-x)**2 + y**2)
-    b = best_m_worst_t*y/np.sqrt((best_m-x)**2 + y**2)
-    plt.scatter([x+a], [y-b], color='green')
-
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.savefig("example_1.png")
-    plt.close()
-
-def example_different_starting_point(x: float, y: float, s: float):
-    m, m_worst_t, cr = best_line_cr(s, x, y, opt=lambda t: line_opt(s, x, y, t))
-
-    plt.plot([0, 1], [0, 0], color='black')
-    plt.plot([x, m], [y, 0], color='red')
-    plt.scatter([s, s+m_worst_t], [0, 0], color='blue')
-
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.savefig("example_different_starting_point.png")
-    plt.close()
-
-def example_recursive(x: float, y: float, s: float, num_turns: int):
-    points, best_x_worst_t, best_cr = best_recurse_cr(s, x, y, num_turns, opt=lambda t: line_opt(s, x, y, t))
-
-    print(f"Best x worst t: {best_x_worst_t}")
-    print(f"Best cr: {best_cr}")
-
-    _points = [(x, y)] + points
-    cumsum = 0
-    for i in range(1, len(_points)):
-        cumsum += np.linalg.norm(np.array(_points[i]) - np.array(_points[i-1]))
-        print(f"{i}: {cumsum}")
-
-    plt.plot([0, 1], [0, 0], color='black')
-    plt.scatter([x], [y], color='black')
-    for i in range(len(points)-1):
-        plt.scatter([points[i][0], points[i+1][0]], [points[i][1], points[i+1][1]], color='red')
-    
-    plt.scatter([s, s+best_x_worst_t], [0, 0], color='blue')
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.savefig("example_recursive.png")
-    plt.close()
-
-def example_4():
-    y = 1/2
-
-    xs = [0, 1/4, 1/2, 3/4, 1]
-    num_turnses = [1, 2, 4, 6]
-    
-    # make len(xs) x len(num_turnses) grid of plots
-    fig, axs = plt.subplots(len(xs), len(num_turnses), figsize=(5*len(num_turnses), 3*len(xs)))
-    progress, total = 0, len(xs)*len(num_turnses)
-    for i, x in enumerate(xs):
-        for j, num_turns in enumerate(num_turnses):
-            progress += 1
-            print(f"Progress: {progress}/{total}")
-            points, best_x_worst_t, best_cr = best_recurse_cr(0, x, y, num_turns, opt=lambda t: line_opt(0, x, y, t))
-
-            axs[i, j].plot([0, 1], [0, 0], color='black')
-            axs[i, j].scatter([x], [y], color='black')
-            for point in points:
-                axs[i, j].scatter([point[0]], [point[1]], color='red')
-            
-            axs[i, j].scatter([best_x_worst_t], [0], color='blue')
-            axs[i, j].set_aspect('equal', adjustable='box')
-            axs[i, j].set_title(f"x={x}, num_turns={num_turns}, CR={best_cr:.2f}")
-
-    plt.savefig("example_4.png")
-    plt.close()
-
-
-def example_5(num_turns: int):
+def run_example(num_turns: int, plot_pursuit: bool = False):
     # same as example four but with fixed num_turns=5 and varying x and y
     xs = [0, 1/4, 1/2, 3/4, 1]
     ys = [1/4, 1/2, 3/4, 1]
@@ -205,24 +139,25 @@ def example_5(num_turns: int):
             
             axs[i, j].scatter([best_x_worst_t], [0], color='blue')
             axs[i, j].set_aspect('equal', adjustable='box')
-            axs[i, j].set_title(f"({x}, {y}), turns={num_turns}, CR={best_cr:.4f}")
+            axs[i, j].set_title(f"x={x}, y={y}, CR={best_cr:.4f}")
 
             # set y range to (0, 1) for all plots
             axs[i, j].set_ylim(0, 1)
 
+            # add pursuit points
+            pursuit_points = get_pursuit_points(x, y, 100)
+            pursuit_x, pursuit_y = zip(*pursuit_points)
+            axs[i, j].plot(pursuit_x, pursuit_y, color='green')
+
+    
+    # set title for entire figure
+    fig.suptitle(f"turns={num_turns}")
     plt.savefig(f"example_{num_turns}_turns.png")
     plt.close()
 
 def main():
-    # s, x, y, num_turns = 0, 1/2, 1/2, 6
-    # example_1(x, y)
-    # example_different_starting_point(x, y, s)
-    # example_recursive(x, y, s, num_turns)
-
-    # example_4()
-    example_5(num_turns=1)
-    example_5(num_turns=2)
-    example_5(num_turns=5)
+    for num_turns in [1, 2, 5]:
+        run_example(num_turns, plot_pursuit=True)
 
 if __name__ == "__main__":
     main()
