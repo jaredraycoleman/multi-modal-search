@@ -21,13 +21,13 @@ def line_del(s: float, x: float, y: float, m: float, t: float) -> float:
     d2m = np.sqrt((m-x)**2 + y**2)  # distance from helper at (x,y) to (m,0)
 
     if s+t >= 1:
-        return 1 # robot fails after delivery is complete
+        return 1-s # robot fails after delivery is complete
 
     if t < d2m: # robot fails before helper reaches m
         a = t*(m-x)/d2m     # x-component of distance traveled by helper before robot fails
         b = t*y/d2m         # y-component of distance traveled by helper before robot fails
         delay = np.sqrt(((x+a)-(s+t))**2 + (y-b)**2) # distance between robot and helper when robot fails
-        return 1 + delay # time taken to finish delivery to (1,0) after robot fails
+        return (1-s) + delay # time taken to finish delivery to (1,0) after robot fails
     
     meeting = ((m-s)+d2m)/2         # time at which robot and helper would meet on the line
     if t < meeting or m-s < d2m: # helper does not reach robot before it fails
@@ -35,7 +35,7 @@ def line_del(s: float, x: float, y: float, m: float, t: float) -> float:
                 np.abs(m-(s+t)) + # time for helper to reach robot from (m,0)
                 1-(s+t)) # time taken to finish delivery to (1,0) after helper reaches robot
     else:
-        return 1
+        return 1-s
     
 def line_opt(s: float, x: float, y: float, t: float) -> float:
     """Optimal time for a helper at (x,y) to reach the robot at (s+t,0) and finish the delivery to (1,0)
@@ -47,7 +47,7 @@ def line_opt(s: float, x: float, y: float, t: float) -> float:
         t (float): time at which the robot fails
     """
     if s+t >= 1:
-        return 1
+        return 1-s
     d2fail = np.sqrt((x-(s+t))**2 + y**2)
     return max(t, d2fail) + 1 - (s+t)
     
@@ -87,11 +87,11 @@ def best_recurse_cr(s: float, x: float, y: float, num_turns: int, opt: Callable[
     new_y = y - y/num_turns # y-coordinate of point helper moves toward
     best_new_x_worst_t, best_new_x_points, best_cr = 0, [], np.inf
     for m in np.linspace(s, 1, N_STEPS):
-        new_x = x + ((m-x)/num_turns) # x-coordinate of point helper moves toward (given it is moving toward (m,0))
-        d2new = np.sqrt((x-new_x)**2 + (y-new_y)**2)
+        new_x: float = x + ((m-x)/num_turns) # x-coordinate of point helper moves toward (given it is moving toward (m,0))
+        d2new: float = np.sqrt((x-new_x)**2 + (y-new_y)**2)
 
         # if robot fails after helper reaches new_x, recurse
-        new_s = min(1, s + d2new) # new starting point for robot (it has traveled while helper moved to new_x)
+        new_s = min(1.0, s + d2new) # new starting point for robot (it has traveled while helper moved to new_x)
         _points, _new_x_worst_t, worst_cr = best_recurse_cr(new_s, new_x, new_y, num_turns-1, opt=opt)
         points = [(new_x, new_y)] + _points
         new_x_worst_t = d2new + _new_x_worst_t
@@ -184,11 +184,10 @@ def example_4():
     plt.close()
 
 
-def example_5():
+def example_5(num_turns: int):
     # same as example four but with fixed num_turns=5 and varying x and y
     xs = [0, 1/4, 1/2, 3/4, 1]
     ys = [1/4, 1/2, 3/4, 1]
-    num_turns = 5
 
     # make len(xs) x len(ys) grid of plots
     fig, axs = plt.subplots(len(xs), len(ys), figsize=(5*len(ys), 5*len(xs)))
@@ -211,7 +210,7 @@ def example_5():
             # set y range to (0, 1) for all plots
             axs[i, j].set_ylim(0, 1)
 
-    plt.savefig("example_5.png")
+    plt.savefig(f"example_{num_turns}_turns.png")
     plt.close()
 
 def main():
@@ -221,7 +220,9 @@ def main():
     # example_recursive(x, y, s, num_turns)
 
     # example_4()
-    example_5()
+    example_5(num_turns=1)
+    example_5(num_turns=2)
+    example_5(num_turns=5)
 
 if __name__ == "__main__":
     main()
